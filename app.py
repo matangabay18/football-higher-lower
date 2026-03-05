@@ -1,8 +1,6 @@
 import streamlit as st
 import json
 import random
-import base64
-from pathlib import Path
 
 # --- 1. Page Configuration ---
 st.set_page_config(page_title="Higher or Lower: Football", page_icon="⚽", layout="wide")
@@ -211,21 +209,6 @@ def load_data():
     with open('players.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-@st.cache_data
-def image_to_base64(path: str) -> str:
-    """Convert a local image file to a base64 data URI for embedding in HTML."""
-    try:
-        p = Path(path)
-        if not p.exists():
-            return ""
-        suffix = p.suffix.lower()
-        mime = "image/jpeg" if suffix in (".jpg", ".jpeg") else "image/png"
-        with open(p, "rb") as f:
-            data = base64.b64encode(f.read()).decode("utf-8")
-        return f"data:{mime};base64,{data}"
-    except Exception:
-        return ""
-
 players = load_data()
 
 
@@ -268,16 +251,11 @@ def restart_game():
 
 # --- 6. Card HTML ---
 def player_card_html(player, show_value: bool) -> str:
-    img_src = ""
-    if player.get('image'):
-        path = player['image']
-        if path.startswith("http"):
-            img_src = path  # fallback remote URL
-        else:
-            img_src = image_to_base64(path)  # local file → base64
+    image = player.get('image', '').strip()
 
-    if img_src:
-        img_block = f'<div class="pcard-img"><img src="{img_src}" alt="{player["name"]}"></div>'
+    # Show image if we have any non-empty URL
+    if image:
+        img_block = f'<div class="pcard-img"><img src="{image}" alt="{player["name"]}"></div>'
     else:
         img_block = '<div class="pcard-placeholder">⚽</div>'
 
