@@ -254,8 +254,9 @@ def player_card_html(player, show_value: bool) -> str:
     image = player.get('image', '').strip()
 
     # Show image if we have any non-empty URL
+    # referrerpolicy="no-referrer" prevents Wikipedia from blocking hotlinks
     if image:
-        img_block = f'<div class="pcard-img"><img src="{image}" alt="{player["name"]}"></div>'
+        img_block = f'<div class="pcard-img"><img src="{image}" alt="{player["name"]}" referrerpolicy="no-referrer" crossorigin="anonymous"></div>'
     else:
         img_block = '<div class="pcard-placeholder">⚽</div>'
 
