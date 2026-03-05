@@ -3,150 +3,150 @@
         "name": "Lamine Yamal",
         "value": 200000000,
         "display_value": "€200.00m",
-        "image": "images\\Lamine_Yamal.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Lamine_Yamal%2C_S%C3%A1nchez_se_reuni%C3%B3_con_los_futbolistas_de_la_selecci%C3%B3n_espa%C3%B1ola_tras_ganar_la_Eurocopa_2024_%283%29_%28cropped%29.jpg"
     },
     {
         "name": "Erling Haaland",
         "value": 200000000,
         "display_value": "€200.00m",
-        "image": "images\\Erling_Haaland.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Erling_Haaland_2020.jpg"
     },
     {
         "name": "Kylian Mbappé",
         "value": 200000000,
         "display_value": "€200.00m",
-        "image": "images\\Kylian_Mbapp_.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/a/a4/2022_FIFA_World_Cup_France_4%E2%80%931_Australia_-_%288%29.jpg"
     },
     {
         "name": "Jude Bellingham",
         "value": 160000000,
         "display_value": "€160.00m",
-        "image": "images\\Jude_Bellingham.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/8/82/2022_FIFA_World_Cup_-_Bellingham_%28cropped%29.jpg"
     },
     {
         "name": "Vinicius Junior",
         "value": 150000000,
         "display_value": "€150.00m",
-        "image": "images\\Vinicius_Junior.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/c/c6/2023_05_06_Final_de_la_Copa_del_Rey_-_52879242230_%28cropped%29.jpg"
     },
     {
         "name": "Pedri",
         "value": 140000000,
         "display_value": "€140.00m",
-        "image": "images\\Pedri.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/13/Pedri.jpg"
     },
     {
         "name": "Jamal Musiala",
         "value": 130000000,
         "display_value": "€130.00m",
-        "image": "images\\Jamal_Musiala.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/a/aa/2022-07-30_Fu%C3%9Fball%2C_M%C3%A4nner%2C_DFL-Supercup%2C_RB_Leipzig_-_FC_Bayern_M%C3%BCnchen_1DX_3417_by_Stepro_%28Jamal_Musiala%2C_Joshua_Zikzee%29.jpg"
     },
     {
         "name": "Michael Olise",
         "value": 130000000,
         "display_value": "€130.00m",
-        "image": "images\\Michael_Olise.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/e/e2/FC_RB_Salzburg_gegen_FC_Bayern_M%C3%BCnchen_%282026-01-06_Testspiel%29_10.jpg"
     },
     {
         "name": "Bukayo Saka",
         "value": 130000000,
         "display_value": "€130.00m",
-        "image": "images\\Bukayo_Saka.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/c/cd/1_bukayo_saka_arsenal_2025_%28cropped%29.jpg"
     },
     {
         "name": "Cole Palmer",
         "value": 120000000,
         "display_value": "€120.00m",
-        "image": "images\\Cole_Palmer.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/f/f1/ColePalmervsLeicester.jpg"
     },
     {
         "name": "Federico Valverde",
         "value": 120000000,
         "display_value": "€120.00m",
-        "image": "images\\Federico_Valverde.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/7/73/Federico_Valverde_2021_%28cropped%29.jpg"
     },
     {
         "name": "Declan Rice",
         "value": 120000000,
         "display_value": "€120.00m",
-        "image": "images\\Declan_Rice.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/e/ea/1_declan_rice_arsenal_2025_%28cropped%29.jpg"
     },
     {
         "name": "Alexander Isak",
         "value": 120000000,
         "display_value": "€120.00m",
-        "image": "images\\Alexander_Isak.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/17/Alexander_Isak_%28training_2016%2C_cropped_1%29.jpg"
     },
     {
         "name": "Moisés Caicedo",
         "value": 110000000,
         "display_value": "€110.00m",
-        "image": "images\\Mois_s_Caicedo.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/e/e9/BHA_5_v_Espanyol_1_pre_season_30_07_2022_103.jpg"
     },
     {
         "name": "João Neves",
         "value": 110000000,
         "display_value": "€110.00m",
-        "image": "images\\Jo_o_Neves.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/1f/DHS_Secretary_Kristi_Noem_Attends_FIFA_Club_World_Cup_2025_Championship_Match_-_54654518861.jpg"
     },
     {
         "name": "Florian Wirtz",
         "value": 110000000,
         "display_value": "€110.00m",
-        "image": "images\\Florian_Wirtz.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Florian_Wirtz%2C_2022-07-31%2C_Saisoner%C3%B6ffnung_Bayer_04%2C_Leverkusen_%281%29_%28cropped%29.jpg"
     },
     {
         "name": "Vitinha",
         "value": 110000000,
         "display_value": "€110.00m",
-        "image": "images\\Vitinha.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/2/2e/FC_Salzburg_gegen_Paris_Saint-Germain_UEFA_Champions_League_64.jpg"
     },
     {
         "name": "Julián Alvarez",
         "value": 100000000,
         "display_value": "€100.00m",
-        "image": "images\\Juli_n_Alvarez.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/13/Arg_vs_mex_julianalvarez_ochoa_y_messi_%28cropped%29.jpg"
     },
     {
         "name": "Ousmane Dembélé",
         "value": 100000000,
         "display_value": "€100.00m",
-        "image": "images\\Ousmane_Demb_l_.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/2/26/Dembele170727-2_%28cropped%29.jpg"
     },
     {
         "name": "Désiré Doué",
         "value": 90000000,
         "display_value": "€90.00m",
-        "image": "images\\D_sir__Dou_.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Doue_asse_psg_2425.png"
     },
     {
         "name": "Arda Güler",
         "value": 90000000,
         "display_value": "€90.00m",
-        "image": "images\\Arda_G_ler.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Arda_G%C3%BCler_%282021-22_S%C3%BCper_Lig%29_-_Resim3_%28cropped%29.png"
     },
     {
         "name": "Khvicha Kvaratskhelia",
         "value": 90000000,
         "display_value": "€90.00m",
-        "image": "images\\Khvicha_Kvaratskhelia.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/0/09/Khvicha_kvaratskhelia_napoli.jpg"
     },
     {
         "name": "William Saliba",
         "value": 90000000,
         "display_value": "€90.00m",
-        "image": "images\\William_Saliba.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/8/8a/1_william_saliba_arsenal_2025_%28cropped%29.jpg"
     },
     {
         "name": "Ryan Gravenberch",
         "value": 90000000,
         "display_value": "€90.00m",
-        "image": "images\\Ryan_Gravenberch.jpg"
+        "image": "https://upload.wikimedia.org/wikipedia/commons/9/98/2022-07-30_Fu%C3%9Fball%2C_M%C3%A4nner%2C_DFL-Supercup%2C_RB_Leipzig_-_FC_Bayern_M%C3%BCnchen_1DX_3326_by_Stepro.jpg"
     },
     {
         "name": "Hugo Ekitiké",
         "value": 85000000,
         "display_value": "€85.00m",
-        "image": "images\\Hugo_Ekitik_.jpg"
+        "image": "https://img.a.transfermarkt.technology/portrait/big/709726-1758714741.jpg?lm=1"
     }
 ]
