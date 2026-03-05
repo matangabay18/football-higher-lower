@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 import random
+import base64
+from pathlib import Path
 
 # --- 1. Page Configuration ---
 st.set_page_config(page_title="Higher or Lower: Football", page_icon="⚽", layout="wide")
@@ -18,7 +20,6 @@ html, body, [data-testid="stAppViewContainer"] {
 [data-testid="stHeader"] { background: transparent; }
 .main .block-container { padding: 2rem 3rem 4rem; max-width: 1300px; }
 
-/* ── Title ── */
 .game-title {
     font-family: 'Bebas Neue', cursive;
     font-size: clamp(3rem, 7vw, 5.5rem);
@@ -39,8 +40,6 @@ html, body, [data-testid="stAppViewContainer"] {
     text-transform: uppercase;
     margin-bottom: 0.5rem;
 }
-
-/* ── Score bar ── */
 .score-bar {
     display: flex;
     justify-content: center;
@@ -63,8 +62,6 @@ html, body, [data-testid="stAppViewContainer"] {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-
-/* ── VS badge ── */
 .vs-wrap {
     display: flex;
     align-items: center;
@@ -82,8 +79,6 @@ html, body, [data-testid="stAppViewContainer"] {
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 0 32px rgba(168,255,120,0.55);
 }
-
-/* ── Player Card ── */
 .pcard {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
@@ -94,24 +89,17 @@ html, body, [data-testid="stAppViewContainer"] {
 .pcard:hover {
     box-shadow: 0 0 0 1px rgba(168,255,120,0.2), 0 16px 48px rgba(0,0,0,0.5);
 }
-
-/*
-  KEY FIX: use aspect-ratio instead of fixed height.
-  Portrait images (taller than wide) will display fully.
-  Wide images will still look fine — they crop to center.
-*/
 .pcard-img {
     width: 100%;
-    aspect-ratio: 3 / 4;   /* portrait: shows the full player */
+    aspect-ratio: 3 / 4;
     overflow: hidden;
-    position: relative;
     background: #111;
 }
 .pcard-img img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center top;  /* align to top so face shows, not feet */
+    object-position: center top;
     display: block;
 }
 .pcard-placeholder {
@@ -123,7 +111,6 @@ html, body, [data-testid="stAppViewContainer"] {
     background: rgba(255,255,255,0.04);
     font-size: 5rem;
 }
-
 .pcard-body {
     padding: 1.1rem 1.4rem 1.5rem;
     text-align: center;
@@ -137,21 +124,9 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 0.3rem;
     line-height: 1.1;
 }
-.pcard-value {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #a8ff78;
-    letter-spacing: 0.03em;
-}
-.pcard-hidden {
-    font-size: 0.8rem;
-    color: #444;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    margin-top: 0.2rem;
-}
+.pcard-value { font-size: 1.4rem; font-weight: 700; color: #a8ff78; }
+.pcard-hidden { font-size: 0.8rem; color: #444; letter-spacing: 0.18em; text-transform: uppercase; margin-top: 0.2rem; }
 
-/* ── Buttons ── */
 div[data-testid="stButton"] button {
     font-family: 'DM Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -160,7 +135,6 @@ div[data-testid="stButton"] button {
     height: 52px !important;
     border-radius: 12px !important;
     font-size: 0.9rem !important;
-    transition: all 0.2s !important;
 }
 .btn-higher div[data-testid="stButton"] button {
     background: linear-gradient(135deg, #a8ff78, #78ffd6) !important;
@@ -186,8 +160,6 @@ div[data-testid="stButton"] button[kind="primary"] {
     font-size: 1rem !important;
     box-shadow: 0 6px 28px rgba(168,255,120,0.35) !important;
 }
-
-/* ── Feedback flash ── */
 .flash-correct {
     background: rgba(168,255,120,0.07);
     border: 1px solid rgba(168,255,120,0.25);
@@ -200,8 +172,6 @@ div[data-testid="stButton"] button[kind="primary"] {
     margin-bottom: 1rem;
     font-size: 0.9rem;
 }
-
-/* ── Game over ── */
 .gameover-box {
     text-align: center;
     padding: 3rem 2rem;
@@ -218,7 +188,6 @@ div[data-testid="stButton"] button[kind="primary"] {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 0.2rem;
 }
 .gameover-score {
     font-family: 'Bebas Neue', cursive;
@@ -229,15 +198,7 @@ div[data-testid="stButton"] button[kind="primary"] {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-.gameover-label {
-    font-size: 0.8rem;
-    color: #555;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    margin-bottom: 2rem;
-}
-
-/* ── Misc ── */
+.gameover-label { font-size: 0.8rem; color: #555; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 2rem; }
 #MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; }
 hr { border-color: rgba(255,255,255,0.05) !important; }
 </style>
@@ -249,6 +210,21 @@ hr { border-color: rgba(255,255,255,0.05) !important; }
 def load_data():
     with open('players.json', 'r', encoding='utf-8') as f:
         return json.load(f)
+
+@st.cache_data
+def image_to_base64(path: str) -> str:
+    """Convert a local image file to a base64 data URI for embedding in HTML."""
+    try:
+        p = Path(path)
+        if not p.exists():
+            return ""
+        suffix = p.suffix.lower()
+        mime = "image/jpeg" if suffix in (".jpg", ".jpeg") else "image/png"
+        with open(p, "rb") as f:
+            data = base64.b64encode(f.read()).decode("utf-8")
+        return f"data:{mime};base64,{data}"
+    except Exception:
+        return ""
 
 players = load_data()
 
@@ -292,12 +268,16 @@ def restart_game():
 
 # --- 6. Card HTML ---
 def player_card_html(player, show_value: bool) -> str:
+    img_src = ""
     if player.get('image'):
-        img_block = (
-            f'<div class="pcard-img">'
-            f'<img src="{player["image"]}" alt="{player["name"]}">'
-            f'</div>'
-        )
+        path = player['image']
+        if path.startswith("http"):
+            img_src = path  # fallback remote URL
+        else:
+            img_src = image_to_base64(path)  # local file → base64
+
+    if img_src:
+        img_block = f'<div class="pcard-img"><img src="{img_src}" alt="{player["name"]}"></div>'
     else:
         img_block = '<div class="pcard-placeholder">⚽</div>'
 
@@ -334,7 +314,6 @@ st.markdown(f"""
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# ── Game Over ──
 if st.session_state.game_over:
     st.markdown(f"""
     <div class='gameover-box'>
@@ -347,14 +326,12 @@ if st.session_state.game_over:
     with mid:
         st.button("🔄 Play Again", on_click=restart_game, type="primary", use_container_width=True)
 
-# ── Active Game ──
 else:
     if st.session_state.last_result == 'correct':
         st.markdown("<div class='flash-correct'>✓ Correct! Keep going!</div>", unsafe_allow_html=True)
 
     p1, p2 = st.session_state.p1, st.session_state.p2
 
-    # Cards — narrow middle column keeps VS badge centred
     left, mid, right = st.columns([11, 1, 11])
     with left:
         st.markdown(player_card_html(p1, show_value=True), unsafe_allow_html=True)
@@ -371,7 +348,6 @@ else:
         unsafe_allow_html=True
     )
 
-    # Buttons
     _, c1, _g, c2, _ = st.columns([1, 4, 1, 4, 1])
     with c1:
         st.markdown("<div class='btn-higher'>", unsafe_allow_html=True)
