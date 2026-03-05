@@ -2,7 +2,14 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
+import os
 import re
+from pathlib import Path
+
+
+# Folder where player images will be saved
+IMAGES_DIR = Path("images")
+IMAGES_DIR.mkdir(exist_ok=True)
 
 
 def clean_value(value_str):
@@ -17,18 +24,17 @@ def clean_value(value_str):
         return 0
 
 
-def get_wikipedia_image(player_name):
-    """
-    Fetches the full original image from Wikipedia by:
-    1. Searching for the player's Wikipedia page
-    2. Getting the main image filename from the page
-    3. Fetching the actual full-resolution file URL from Wikimedia Commons
-    This gives us the real original upload, not a thumbnail.
-    """
+def safe_filename(name):
+    """Convert player name to a safe filename."""
+    return re.sub(r'[^a-zA-Z0-9_-]', '_', name) + ".jpg"
+
+
+def get_wikipedia_image_url(player_name):
+    """Find the full-resolution image URL from Wikipedia."""
     session = requests.Session()
     session.headers.update({'User-Agent': 'FootballHigherLower/1.0 (educational project)'})
 
-    # Step 1: find the Wikipedia page
+    # Step 1: find the page
     search_resp = session.get(
         "https://en.wikipedia.org/w/api.php",
         params={
@@ -46,7 +52,7 @@ def get_wikipedia_image(player_name):
 
     page_title = results[0]['title']
 
-    # Step 2: get the image filename used on that page
+    # Step 2: get image filenames on that page
     images_resp = session.get(
         "https://en.wikipedia.org/w/api.php",
         params={
@@ -63,11 +69,10 @@ def get_wikipedia_image(player_name):
     for page in pages.values():
         for img in page.get('images', []):
             title = img['title']
-            # Skip icons, flags, logos — we want a real photo
             lower = title.lower()
-            if any(skip in lower for skip in ['flag', 'icon', 'logo', 'kit', 'shield', 'coat', 'svg', 'map']):
+            if any(skip in lower for skip in ['flag', 'icon', 'logo', 'kit', 'shield', 'coat', 'map', 'blank']):
                 continue
-            if title.lower().endswith(('.jpg', '.jpeg', '.png')):
+            if lower.endswith(('.jpg', '.jpeg', '.png')):
                 image_filename = title
                 break
         if image_filename:
@@ -76,7 +81,7 @@ def get_wikipedia_image(player_name):
     if not image_filename:
         return None
 
-    # Step 3: get the actual full-resolution URL from Wikimedia
+    # Step 3: get the actual full-resolution URL
     file_resp = session.get(
         "https://en.wikipedia.org/w/api.php",
         params={
@@ -92,19 +97,40 @@ def get_wikipedia_image(player_name):
     for page in file_pages.values():
         info = page.get('imageinfo', [])
         if info:
-            return info[0]['url']  # direct full-res Wikimedia URL
+            return info[0]['url']
 
     return None
 
 
-def get_transfermarkt_image(row):
-    """Fallback: Transfermarkt player image."""
-    img_tag = row.find('img', {'class': 'bilderrahmen-fixed'})
-    if img_tag and 'src' in img_tag.attrs:
-        return (img_tag['src']
-                .replace('/small/', '/big/')
-                .replace('/tiny/', '/big/'))
-    return ""
+def download_image(url, player_name):
+    """
+    Download image from URL and save it locally.
+    Returns the local file path string, or None on failure.
+    """
+    filename = safe_filename(player_name)
+    filepath = IMAGES_DIR / filename
+
+    # Skip if already downloaded
+    if filepath.exists():
+        print(f"  ✓ Already downloaded: {filename}")
+        return str(filepath)
+
+    try:
+        headers = {'User-Agent': 'FootballHigherLower/1.0'}
+        resp = requests.get(url, headers=headers, timeout=15, stream=True)
+        if resp.status_code == 200:
+            with open(filepath, 'wb') as f:
+                for chunk in resp.iter_content(8192):
+                    f.write(chunk)
+            size_kb = filepath.stat().st_size // 1024
+            print(f"  ✓ Downloaded {filename} ({size_kb} KB)")
+            return str(filepath)
+        else:
+            print(f"  ! HTTP {resp.status_code} for {url}")
+    except Exception as e:
+        print(f"  ! Download error: {e}")
+
+    return None
 
 
 def scrape_players():
@@ -130,7 +156,7 @@ def scrape_players():
         return
 
     rows = table.find('tbody').find_all('tr', recursive=False)
-    print(f"Found {len(rows)} players. Fetching images...\n")
+    print(f"Found {len(rows)} players. Fetching & downloading images...\n")
 
     for i, row in enumerate(rows):
         try:
@@ -145,22 +171,32 @@ def scrape_players():
                 continue
 
             print(f"[{i+1}] {name} ({raw_value})")
-            image_url = get_wikipedia_image(name)
+
+            # Get URL then download it
+            image_url = get_wikipedia_image_url(name)
+            local_path = None
 
             if image_url:
-                print(f"  ✓ Wikipedia: {image_url[:70]}...")
-            else:
-                print(f"  ! Falling back to Transfermarkt image")
-                image_url = get_transfermarkt_image(row)
+                local_path = download_image(image_url, name)
+
+            # Fallback: Transfermarkt image
+            if not local_path:
+                img_tag = row.find('img', {'class': 'bilderrahmen-fixed'})
+                if img_tag and 'src' in img_tag.attrs:
+                    tm_url = (img_tag['src']
+                              .replace('/small/', '/big/')
+                              .replace('/tiny/', '/big/'))
+                    local_path = download_image(tm_url, name)
 
             players_list.append({
                 "name": name,
                 "value": numeric_value,
                 "display_value": raw_value,
-                "image": image_url
+                # Store local path for Streamlit to serve
+                "image": local_path or ""
             })
 
-            time.sleep(0.5)  # be polite to Wikipedia
+            time.sleep(0.5)
 
         except Exception as e:
             print(f"  Error on row: {e}")
@@ -170,6 +206,7 @@ def scrape_players():
         json.dump(players_list, f, indent=4, ensure_ascii=False)
 
     print(f"\n✅ Done! Saved {len(players_list)} players to players.json")
+    print(f"   Images saved in: {IMAGES_DIR.resolve()}")
 
 
 if __name__ == "__main__":
