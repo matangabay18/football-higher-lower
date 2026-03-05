@@ -1,6 +1,8 @@
 import streamlit as st
 import json
 import random
+import os
+from datetime import datetime
 
 # --- 1. Page Configuration ---
 st.set_page_config(page_title="Higher or Lower: Football", page_icon="⚽", layout="wide")
@@ -172,12 +174,12 @@ div[data-testid="stButton"] button[kind="primary"] {
 }
 .gameover-box {
     text-align: center;
-    padding: 3rem 2rem;
+    padding: 2.5rem 2rem 1.5rem;
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: 24px;
-    max-width: 460px;
-    margin: 3rem auto;
+    max-width: 500px;
+    margin: 2rem auto;
 }
 .gameover-title {
     font-family: 'Bebas Neue', cursive;
@@ -196,14 +198,93 @@ div[data-testid="stButton"] button[kind="primary"] {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
-.gameover-label { font-size: 0.8rem; color: #555; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 2rem; }
+.gameover-label { font-size: 0.8rem; color: #555; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 1.5rem; }
+
+/* Leaderboard */
+.lb-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 2rem;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin: 2rem 0 1rem;
+    color: #fff;
+}
+.lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 auto;
+    max-width: 600px;
+}
+.lb-table th {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #555;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.lb-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 0.95rem;
+    color: #ccc;
+}
+.lb-table tr:first-child td { color: #ffd700; font-weight: 700; }
+.lb-table tr:nth-child(2) td { color: #c0c0c0; font-weight: 600; }
+.lb-table tr:nth-child(3) td { color: #cd7f32; font-weight: 600; }
+.lb-rank { font-family: 'Bebas Neue', cursive; font-size: 1.2rem; color: #444; }
+.lb-score-val { font-family: 'Bebas Neue', cursive; font-size: 1.4rem; color: #a8ff78; }
+.lb-highlight td { background: rgba(168,255,120,0.05); color: #a8ff78 !important; }
+
+/* Input styling */
+div[data-testid="stTextInput"] input {
+    background: rgba(255,255,255,0.05) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    border-radius: 12px !important;
+    color: #fff !important;
+    font-family: 'DM Sans', sans-serif !important;
+    font-size: 1rem !important;
+    padding: 0.6rem 1rem !important;
+    text-align: center !important;
+}
+
 #MainMenu, footer, [data-testid="stToolbar"] { visibility: hidden; }
 hr { border-color: rgba(255,255,255,0.05) !important; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# --- 3. Load Data ---
+# --- 3. Leaderboard helpers ---
+LEADERBOARD_FILE = "leaderboard.json"
+
+def load_leaderboard():
+    if os.path.exists(LEADERBOARD_FILE):
+        try:
+            with open(LEADERBOARD_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_leaderboard(data):
+    with open(LEADERBOARD_FILE, 'w') as f:
+        json.dump(data, f, indent=2)
+
+def add_score(name, score):
+    lb = load_leaderboard()
+    lb.append({
+        "name": name.strip(),
+        "score": score,
+        "date": datetime.now().strftime("%d/%m/%Y")
+    })
+    # Keep top 100, sorted by score desc
+    lb = sorted(lb, key=lambda x: x['score'], reverse=True)[:100]
+    save_leaderboard(lb)
+    return lb
+
+
+# --- 4. Load Players ---
 @st.cache_data
 def load_data():
     with open('players.json', 'r', encoding='utf-8') as f:
@@ -212,19 +293,20 @@ def load_data():
 players = load_data()
 
 
-# --- 4. State ---
+# --- 5. Session State ---
 def get_random_player(exclude_name=None):
     pool = [p for p in players if p['name'] != exclude_name] if exclude_name else players
     return random.choice(pool)
 
-if 'score'       not in st.session_state: st.session_state.score = 0
-if 'game_over'   not in st.session_state: st.session_state.game_over = False
-if 'last_result' not in st.session_state: st.session_state.last_result = None
-if 'p1'          not in st.session_state: st.session_state.p1 = get_random_player()
-if 'p2'          not in st.session_state: st.session_state.p2 = get_random_player(st.session_state.p1['name'])
+if 'score'          not in st.session_state: st.session_state.score = 0
+if 'game_over'      not in st.session_state: st.session_state.game_over = False
+if 'last_result'    not in st.session_state: st.session_state.last_result = None
+if 'score_saved'    not in st.session_state: st.session_state.score_saved = False
+if 'p1'             not in st.session_state: st.session_state.p1 = get_random_player()
+if 'p2'             not in st.session_state: st.session_state.p2 = get_random_player(st.session_state.p1['name'])
 
 
-# --- 5. Logic ---
+# --- 6. Game Logic ---
 def check_guess(guess):
     v1, v2 = st.session_state.p1['value'], st.session_state.p2['value']
     correct = (
@@ -245,16 +327,14 @@ def restart_game():
     st.session_state.score = 0
     st.session_state.game_over = False
     st.session_state.last_result = None
+    st.session_state.score_saved = False
     st.session_state.p1 = get_random_player()
     st.session_state.p2 = get_random_player(st.session_state.p1['name'])
 
 
-# --- 6. Card HTML ---
+# --- 7. Card HTML ---
 def player_card_html(player, show_value: bool) -> str:
     image = player.get('image', '').strip()
-
-    # Show image if we have any non-empty URL
-    # referrerpolicy="no-referrer" prevents Wikipedia from blocking hotlinks
     if image:
         img_block = f'<div class="pcard-img"><img src="{image}" alt="{player["name"]}" referrerpolicy="no-referrer" crossorigin="anonymous"></div>'
     else:
@@ -265,7 +345,6 @@ def player_card_html(player, show_value: bool) -> str:
         if show_value else
         '<div class="pcard-hidden">??? · Make your guess</div>'
     )
-
     return f"""
     <div class="pcard">
         {img_block}
@@ -274,6 +353,40 @@ def player_card_html(player, show_value: bool) -> str:
             {value_html}
         </div>
     </div>
+    """
+
+
+# --- 8. Leaderboard HTML ---
+def leaderboard_html(entries, highlight_name=None):
+    if not entries:
+        return "<p style='text-align:center;color:#444;'>No scores yet. Be the first!</p>"
+
+    medals = {1: "🥇", 2: "🥈", 3: "🥉"}
+    rows = ""
+    for i, entry in enumerate(entries[:20], 1):
+        rank = medals.get(i, f'<span class="lb-rank">{i}</span>')
+        highlight = "lb-highlight" if (highlight_name and entry['name'].lower() == highlight_name.lower()) else ""
+        rows += f"""
+        <tr class="{highlight}">
+            <td>{rank}</td>
+            <td>{entry['name']}</td>
+            <td><span class="lb-score-val">{entry['score']}</span></td>
+            <td style="color:#444;font-size:0.8rem">{entry['date']}</td>
+        </tr>
+        """
+
+    return f"""
+    <table class="lb-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>{rows}</tbody>
+    </table>
     """
 
 
@@ -293,18 +406,49 @@ st.markdown(f"""
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# ── Game Over Screen ──
 if st.session_state.game_over:
+    final_score = st.session_state.score
+
     st.markdown(f"""
     <div class='gameover-box'>
         <div class='gameover-title'>Game Over</div>
-        <div class='gameover-score'>{st.session_state.score}</div>
+        <div class='gameover-score'>{final_score}</div>
         <div class='gameover-label'>Final Score</div>
     </div>
     """, unsafe_allow_html=True)
-    _, mid, _ = st.columns([1, 2, 1])
-    with mid:
-        st.button("🔄 Play Again", on_click=restart_game, type="primary", use_container_width=True)
 
+    # Save score section
+    if not st.session_state.score_saved:
+        st.markdown("<p style='text-align:center;color:#888;margin:1rem 0 0.3rem;'>Enter your name to save your score:</p>", unsafe_allow_html=True)
+        _, inp_col, _ = st.columns([1, 2, 1])
+        with inp_col:
+            player_name = st.text_input("", placeholder="Your name...", label_visibility="collapsed", key="name_input")
+            save_col, play_col = st.columns(2)
+            with save_col:
+                if st.button("💾 Save Score", use_container_width=True, type="primary"):
+                    if player_name.strip():
+                        lb = add_score(player_name, final_score)
+                        st.session_state.score_saved = True
+                        st.session_state.saved_name = player_name.strip()
+                        st.rerun()
+                    else:
+                        st.warning("Please enter your name!")
+            with play_col:
+                st.button("🔄 Play Again", on_click=restart_game, use_container_width=True)
+    else:
+        st.markdown(f"<p style='text-align:center;color:#a8ff78;font-weight:600;margin:0.5rem 0 1.5rem;'>✓ Score saved!</p>", unsafe_allow_html=True)
+        _, mid, _ = st.columns([1, 2, 1])
+        with mid:
+            st.button("🔄 Play Again", on_click=restart_game, type="primary", use_container_width=True)
+
+    # Leaderboard
+    st.markdown("<div class='lb-title'>🏆 All-Time Leaderboard</div>", unsafe_allow_html=True)
+    lb_data = load_leaderboard()
+    highlight = st.session_state.get('saved_name', None)
+    st.markdown(leaderboard_html(lb_data, highlight), unsafe_allow_html=True)
+
+# ── Active Game ──
 else:
     if st.session_state.last_result == 'correct':
         st.markdown("<div class='flash-correct'>✓ Correct! Keep going!</div>", unsafe_allow_html=True)
