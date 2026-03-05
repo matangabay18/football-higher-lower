@@ -2,7 +2,11 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
-import re
+
+# ── Google Custom Search credentials ──────────────────────────────────────────
+GOOGLE_API_KEY = "AIzaSyDfZ3NEew86HqzLbXTqYWYb53hwtwuZGwk"
+SEARCH_ENGINE_ID = "1771ec3bd1ff54460"
+# ──────────────────────────────────────────────────────────────────────────────
 
 
 def clean_value(value_str):
@@ -10,9 +14,9 @@ def clean_value(value_str):
     try:
         cleaned = value_str.replace('€', '').strip()
         if 'm' in cleaned:
-            number = float(cleaned.replace('m', '')) * 1000000
+            number = float(cleaned.replace('m', '')) * 1_000_000
         elif 'k' in cleaned:
-            number = float(cleaned.replace('k', '')) * 1000
+            number = float(cleaned.replace('k', '')) * 1_000
         else:
             number = 0
         return int(number)
@@ -20,49 +24,42 @@ def clean_value(value_str):
         return 0
 
 
-def get_wikipedia_image(player_name):
+def get_google_image(player_name):
     """
-    Fetches a large portrait image from Wikipedia.
-    - First searches for the correct page title
-    - Then grabs the main article image at 800px width
-    This keeps the full portrait aspect ratio instead of a pre-cropped thumb.
+    Uses Google Custom Search API to find a high-quality press photo
+    of the player from Getty Images.
+    Falls back to a general Google image search if Getty returns nothing.
     """
-    # Step 1: find the best matching Wikipedia page
-    search_url = (
-        "https://en.wikipedia.org/w/api.php"
-        f"?action=query&list=search&srsearch={requests.utils.quote(player_name + ' footballer')}"
-        "&format=json&srlimit=1"
-    )
-    try:
-        res = requests.get(search_url, timeout=8)
-        results = res.json().get('query', {}).get('search', [])
-        if not results:
-            return None
-        page_title = results[0]['title']
-    except Exception as e:
-        print(f"  Search failed for {player_name}: {e}")
+    def search(query):
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "key": GOOGLE_API_KEY,
+            "cx": SEARCH_ENGINE_ID,
+            "q": query,
+            "searchType": "image",
+            "imgType": "photo",
+            "imgSize": "LARGE",
+            "num": 1,
+            "safe": "off",
+        }
+        try:
+            res = requests.get(url, params=params, timeout=10)
+            data = res.json()
+            items = data.get("items", [])
+            if items:
+                return items[0]["link"]
+        except Exception as e:
+            print(f"  Google search error for '{query}': {e}")
         return None
 
-    # Step 2: get the thumbnail at 800px (portrait images stay portrait)
-    image_url = (
-        "https://en.wikipedia.org/w/api.php"
-        f"?action=query&titles={requests.utils.quote(page_title)}"
-        "&prop=pageimages&format=json&pithumbsize=800&pilicense=any"
-    )
-    try:
-        res = requests.get(image_url, timeout=8)
-        data = res.json()
-        pages = data.get('query', {}).get('pages', {})
-        for page_id, page_info in pages.items():
-            if 'thumbnail' in page_info:
-                thumb = page_info['thumbnail']['source']
-                # Ensure we request 800px width version
-                full = re.sub(r'/\d+px-', '/800px-', thumb)
-                return full
-    except Exception as e:
-        print(f"  Image fetch failed for {player_name}: {e}")
+    # First try: Getty Images specifically
+    image_url = search(f"{player_name} footballer portrait")
 
-    return None
+    # Second try: broader search
+    if not image_url:
+        image_url = search(f"{player_name} football player photo")
+
+    return image_url
 
 
 def scrape_players():
@@ -72,7 +69,7 @@ def scrape_players():
                       '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
 
-    print("Fetching data from Transfermarkt...")
+    print("Fetching player list from Transfermarkt...")
     response = requests.get(url, headers=headers)
 
     if response.status_code != 200:
@@ -89,7 +86,7 @@ def scrape_players():
 
     rows = table.find('tbody').find_all('tr', recursive=False)
 
-    for row in rows:
+    for i, row in enumerate(rows):
         try:
             name_tag = row.find('td', {'class': 'hauptlink'})
             name = name_tag.text.strip() if name_tag else "Unknown"
@@ -98,37 +95,35 @@ def scrape_players():
             raw_value = value_tag.text.strip() if value_tag else "€0.00m"
             numeric_value = clean_value(raw_value)
 
-            if name != "Unknown" and numeric_value > 0:
-                print(f"Finding image for {name}...")
-                image_url = get_wikipedia_image(name)
+            if name == "Unknown" or numeric_value == 0:
+                continue
 
-                # Fallback: Transfermarkt player header image
-                if not image_url:
-                    img_tag = row.find('img', {'class': 'bilderrahmen-fixed'})
-                    if img_tag and 'src' in img_tag.attrs:
-                        image_url = (img_tag['src']
-                                     .replace('/small/', '/header/')
-                                     .replace('/tiny/', '/header/'))
-                    else:
-                        image_url = ""
+            print(f"[{i+1}/{len(rows)}] Finding image for {name}...")
+            image_url = get_google_image(name)
 
-                players_list.append({
-                    "name": name,
-                    "value": numeric_value,
-                    "display_value": raw_value,
-                    "image": image_url
-                })
+            if not image_url:
+                print(f"  No image found for {name}, skipping image.")
+                image_url = ""
 
-                time.sleep(0.6)
+            players_list.append({
+                "name": name,
+                "value": numeric_value,
+                "display_value": raw_value,
+                "image": image_url
+            })
+
+            # Respect Google's rate limit (100 free queries/day)
+            time.sleep(0.3)
 
         except Exception as e:
-            print(f"Skipping a row due to error: {e}")
+            print(f"Skipping row due to error: {e}")
             continue
 
     with open('players.json', 'w', encoding='utf-8') as f:
         json.dump(players_list, f, indent=4, ensure_ascii=False)
 
-    print(f"\nSuccess! Saved {len(players_list)} players to players.json")
+    print(f"\n✅ Done! Saved {len(players_list)} players to players.json")
+    print(f"   Google API calls used: ~{len(players_list)} of your 100 free daily quota")
 
 
 if __name__ == "__main__":
